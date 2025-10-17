@@ -1,0 +1,8 @@
+venv/
+.env/
+.venv/
+pycache/
+*.pyc
+quilometragem.db
+.DS_Store
+Thumbs.db

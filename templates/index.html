@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Quilometragem</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; background: #eef1f7; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px; text-align: center; }
+        .tabs { display: flex; gap: 2px; background: #f3f4f6; }
+        .tab { flex: 1; padding: 12px; cursor: pointer; border: 0; background: transparent; font-weight: 600; }
+        .tab.active { background: #fff; border-bottom: 2px solid #667eea; color: #667eea; }
+        .content { padding: 20px; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .form-group label { display: block; margin: 8px 0 6px; font-weight: 600; }
+        .form-group label.required::after { content: ' *'; color: #e11d48; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .btn { padding: 10px 16px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: #667eea; color: #fff; }
+        .btn-secondary { background: #6b7280; color: #fff; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-info { background: #0ea5e9; color: #fff; }
+        .btn-success { background: #16a34a; color: #fff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+        thead { background: #f3f4f6; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 95%; max-width: 700px; }
+        .export-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+        .qrcode-container { text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🚗 Sistema de Quilometragem</h2>
+            <p>Controle de uso de veículos e relatórios</p>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('novo')">➕ Novo Registro</button>
+            <button class="tab" onclick="showTab('consulta')">📋 Consultar</button>
+            <button class="tab" onclick="showTab('relatorios')">📊 Relatórios</button>
+            <button class="tab" onclick="showTab('qrcode')">📱 QR Code</button>
+        </div>
+        <div class="content">
+            <div id="tab-novo" class="tab-content" style="display:block;">
+                <div id="alert-container"></div>
+                <form id="form-registro">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required">Nome do Condutor</label>
+                            <input type="text" id="condutor" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Placa do Veículo</label>
+                            <input type="text" id="placa_veiculo" placeholder="ABC-1234" required />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required">Data de Saída</label>
+                            <input type="date" id="data_saida" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Data de Chegada</label>
+                            <input type="date" id="data_chegada" required />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required">KM Inicial</label>
+                            <input type="number" id="km_inicial" step="0.1" min="0" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="required">KM Final</label>
+                            <input type="number" id="km_final" step="0.1" min="0" required />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Observações</label>
+                        <textarea id="observacoes" rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-primary" type="submit">💾 Salvar</button>
+                    <button class="btn btn-secondary" type="reset">🔄 Limpar</button>
+                </form>
+            </div>
+            <div id="tab-consulta" class="tab-content" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Condutor</label>
+                        <input type="text" id="filtro-condutor" />
+                    </div>
+                    <div class="form-group">
+                        <label>Placa</label>
+                        <input type="text" id="filtro-placa" />
+                    </div>
+                    <div class="form-group">
+                        <label>Data Início</label>
+                        <input type="date" id="filtro-data-inicio" />
+                    </div>
+                    <div class="form-group">
+                        <label>Data Fim</label>
+                        <input type="date" id="filtro-data-fim" />
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="buscarRegistros()">🔍 Buscar</button>
+                <button class="btn btn-secondary" onclick="limparFiltros()">🔄 Limpar</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Condutor</th>
+                            <th>Placa</th>
+                            <th>Saída</th>
+                            <th>Chegada</th>
+                            <th>KM Inicial</th>
+                            <th>KM Final</th>
+                            <th>Distância</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-registros"></tbody>
+                </table>
+            </div>
+            <div id="tab-relatorios" class="tab-content" style="display:none;">
+                <p>Exportar registros:</p>
+                <div class="export-buttons">
+                    <button class="btn btn-success" onclick="exportar('csv')">📄 CSV</button>
+                    <button class="btn btn-info" onclick="exportar('excel')">📊 Excel</button>
+                    <button class="btn btn-danger" onclick="exportar('pdf')">📕 PDF</button>
+                </div>
+            </div>
+            <div id="tab-qrcode" class="tab-content" style="display:none;">
+                <div class="qrcode-container">
+                    <h3>📱 QR Code de Acesso</h3>
+                    <img id="qrcode-img" src="/api/qrcode" alt="QR Code" />
+                    <p><strong>URL:</strong> <span id="system-url"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-editar" class="modal">
+        <div class="modal-content">
+            <h3>✏️ Editar Registro</h3>
+            <form id="form-editar">
+                <input type="hidden" id="edit-id" />
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required">Condutor</label>
+                        <input id="edit-condutor" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Placa</label>
+                        <input id="edit-placa_veiculo" required />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required">Saída</label>
+                        <input type="date" id="edit-data_saida" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="required">Chegada</label>
+                        <input type="date" id="edit-data_chegada" required />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required">KM Inicial</label>
+                        <input type="number" id="edit-km_inicial" step="0.1" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="required">KM Final</label>
+                        <input type="number" id="edit-km_final" step="0.1" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Observações</label>
+                    <textarea id="edit-observacoes"></textarea>
+                </div>
+                <button class="btn btn-primary" type="submit">Salvar</button>
+                <button class="btn btn-secondary" type="button" onclick="fecharModal('modal-editar')">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-historico" class="modal">
+        <div class="modal-content">
+            <h3>📜 Histórico</h3>
+            <div id="historico-content"></div>
+            <button class="btn btn-secondary" onclick="fecharModal('modal-historico')">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        function showTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            event.target.classList.add('active');
+            document.getElementById(`tab-${name}`).style.display = 'block';
+            if (name === 'consulta') buscarRegistros();
+            if (name === 'qrcode') document.getElementById('system-url').textContent = window.location.href;
+        }
+        function alertInline(msg, ok=true) {
+            const el = document.getElementById('alert-container');
+            el.innerHTML = `<div style="padding:10px;border-radius:8px;margin:8px 0;${ok?'background:#dcfce7;color:#166534':'background:#fee2e2;color:#991b1b'}">${msg}</div>`;
+            setTimeout(()=> el.innerHTML = '', 4000);
+        }
+        document.getElementById('form-registro').addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            const body = {
+                condutor: document.getElementById('condutor').value,
+                placa_veiculo: document.getElementById('placa_veiculo').value,
+                data_saida: document.getElementById('data_saida').value,
+                data_chegada: document.getElementById('data_chegada').value,
+                km_inicial: parseFloat(document.getElementById('km_inicial').value),
+                km_final: parseFloat(document.getElementById('km_final').value),
+                observacoes: document.getElementById('observacoes').value
+            };
+            const res = await fetch(`${API_URL}/api/registros`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+            const data = await res.json();
+            if(res.ok){ alertInline(`✅ Registro salvo! Distância: ${data.distancia_percorrida} km`); e.target.reset(); }
+            else { alertInline(`❌ ${data.error}`, false); }
+        });
+        async function buscarRegistros(){
+            const params = new URLSearchParams({
+                condutor: document.getElementById('filtro-condutor')?.value||'',
+                placa: document.getElementById('filtro-placa')?.value||'',
+                data_inicio: document.getElementById('filtro-data-inicio')?.value||'',
+                data_fim: document.getElementById('filtro-data-fim')?.value||''
+            });
+            const res = await fetch(`${API_URL}/api/registros?${params}`);
+            const regs = await res.json();
+            const tbody = document.getElementById('tbody-registros');
+            tbody.innerHTML = regs.length? regs.map(r=>`
+                <tr>
+                    <td>${r.id}</td><td>${r.condutor}</td><td>${r.placa_veiculo}</td>
+                    <td>${fmtData(r.data_saida)}</td><td>${fmtData(r.data_chegada)}</td>
+                    <td>${r.km_inicial}</td><td>${r.km_final}</td><td><b>${r.distancia_percorrida} km</b></td>
+                    <td>
+                      <button class='btn btn-info' onclick='editarRegistro(${r.id})'>✏️</button>
+                      <button class='btn btn-secondary' onclick='verHistorico(${r.id})'>📜</button>
+                      <button class='btn btn-danger' onclick='deletarRegistro(${r.id})'>🗑️</button>
+                    </td>
+                </tr>`).join('') : '<tr><td colspan="9">Nenhum registro</td></tr>';
+        }
+        function limparFiltros(){
+            ['filtro-condutor','filtro-placa','filtro-data-inicio','filtro-data-fim'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+            buscarRegistros();
+        }
+        async function editarRegistro(id){
+            const res = await fetch(`${API_URL}/api/registros/${id}`);
+            const r = await res.json();
+            document.getElementById('edit-id').value = r.id;
+            document.getElementById('edit-condutor').value = r.condutor;
+            document.getElementById('edit-placa_veiculo').value = r.placa_veiculo;
+            document.getElementById('edit-data_saida').value = r.data_saida;
+            document.getElementById('edit-data_chegada').value = r.data_chegada;
+            document.getElementById('edit-km_inicial').value = r.km_inicial;
+            document.getElementById('edit-km_final').value = r.km_final;
+            document.getElementById('edit-observacoes').value = r.observacoes||'';
+            document.getElementById('modal-editar').classList.add('active');
+        }
+        document.getElementById('form-editar').addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const body = {
+                condutor: document.getElementById('edit-condutor').value,
+                placa_veiculo: document.getElementById('edit-placa_veiculo').value,
+                data_saida: document.getElementById('edit-data_saida').value,
+                data_chegada: document.getElementById('edit-data_chegada').value,
+                km_inicial: parseFloat(document.getElementById('edit-km_inicial').value),
+                km_final: parseFloat(document.getElementById('edit-km_final').value),
+                observacoes: document.getElementById('edit-observacoes').value,
+                usuario_alteracao: 'Sistema'
+            };
+            const res = await fetch(`${API_URL}/api/registros/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+            const data = await res.json();
+            if(res.ok){ alert('Registro atualizado!'); fecharModal('modal-editar'); buscarRegistros(); }
+            else { alert(data.error); }
+        });
+        async function deletarRegistro(id){
+            if(!confirm('Tem certeza que deseja deletar este registro?')) return;
+            const res = await fetch(`${API_URL}/api/registros/${id}`, { method:'DELETE' });
+            if(res.ok){ alert('Registro deletado!'); buscarRegistros(); } else { alert('Erro ao deletar'); }
+        }
+        async function verHistorico(id){
+            const res = await fetch(`${API_URL}/api/registros/${id}/historico`);
+            const hist = await res.json();
+            const c = document.getElementById('historico-content');
+            c.innerHTML = hist.length ? hist.map(h=>`<div style='padding:8px;border-left:3px solid #667eea;margin:6px 0;'>
+                <b>${h.campo_alterado}</b><br>De: ${h.valor_anterior} → Para: ${h.valor_novo}<br>
+                <small>${new Date(h.data_alteracao).toLocaleString('pt-BR')} - ${h.usuario_alteracao}</small>
+            </div>`).join('') : 'Sem alterações.';
+            document.getElementById('modal-historico').classList.add('active');
+        }
+        function fecharModal(id){ document.getElementById(id).classList.remove('active'); }
+        function exportar(fmt){ window.open(`${API_URL}/api/exportar/${fmt}`, '_blank'); }
+        function fmtData(d){ if(!d) return ''; const [y,m,da]=d.split('-'); return `${da}/${m}/${y}`; }
+        document.addEventListener('DOMContentLoaded', buscarRegistros);
+    </script>
+</body>
+</html>
