@@ -4,34 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sistema de Quilometragem</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, Helvetica, sans-serif; background: #eef1f7; min-height: 100vh; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px; text-align: center; }
-        .tabs { display: flex; gap: 2px; background: #f3f4f6; }
-        .tab { flex: 1; padding: 12px; cursor: pointer; border: 0; background: transparent; font-weight: 600; }
-        .tab.active { background: #fff; border-bottom: 2px solid #667eea; color: #667eea; }
-        .content { padding: 20px; }
-        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-        .form-group label { display: block; margin: 8px 0 6px; font-weight: 600; }
-        .form-group label.required::after { content: ' *'; color: #e11d48; }
-        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; }
-        .btn { padding: 10px 16px; border-radius: 8px; border: 0; cursor: pointer; font-weight: 600; }
-        .btn-primary { background: #667eea; color: #fff; }
-        .btn-secondary { background: #6b7280; color: #fff; }
-        .btn-danger { background: #ef4444; color: #fff; }
-        .btn-info { background: #0ea5e9; color: #fff; }
-        .btn-success { background: #16a34a; color: #fff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; }
-        thead { background: #f3f4f6; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 95%; max-width: 700px; }
-        .export-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
-        .qrcode-container { text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px; }
-    </style>
+
+    <!-- CSS externo -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
@@ -87,6 +62,7 @@
                     <button class="btn btn-secondary" type="reset">🔄 Limpar</button>
                 </form>
             </div>
+
             <div id="tab-consulta" class="tab-content" style="display:none;">
                 <div class="form-row">
                     <div class="form-group">
@@ -125,6 +101,7 @@
                     <tbody id="tbody-registros"></tbody>
                 </table>
             </div>
+
             <div id="tab-relatorios" class="tab-content" style="display:none;">
                 <p>Exportar registros:</p>
                 <div class="export-buttons">
@@ -133,6 +110,7 @@
                     <button class="btn btn-danger" onclick="exportar('pdf')">📕 PDF</button>
                 </div>
             </div>
+
             <div id="tab-qrcode" class="tab-content" style="display:none;">
                 <div class="qrcode-container">
                     <h3>📱 QR Code de Acesso</h3>
@@ -198,6 +176,7 @@
 
     <script>
         const API_URL = window.location.origin;
+
         function showTab(name) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
@@ -206,12 +185,14 @@
             if (name === 'consulta') buscarRegistros();
             if (name === 'qrcode') document.getElementById('system-url').textContent = window.location.href;
         }
-        function alertInline(msg, ok=true) {
+
+        function alertInline(msg, ok = true) {
             const el = document.getElementById('alert-container');
-            el.innerHTML = `<div style="padding:10px;border-radius:8px;margin:8px 0;${ok?'background:#dcfce7;color:#166534':'background:#fee2e2;color:#991b1b'}">${msg}</div>`;
-            setTimeout(()=> el.innerHTML = '', 4000);
+            el.innerHTML = `<div style="padding:10px;border-radius:8px;margin:8px 0;${ok ? 'background:#dcfce7;color:#166534' : 'background:#fee2e2;color:#991b1b'}">${msg}</div>`;
+            setTimeout(() => el.innerHTML = '', 4000);
         }
-        document.getElementById('form-registro').addEventListener('submit', async (e)=>{
+
+        document.getElementById('form-registro').addEventListener('submit', async (e) => {
             e.preventDefault();
             const body = {
                 condutor: document.getElementById('condutor').value,
@@ -222,22 +203,31 @@
                 km_final: parseFloat(document.getElementById('km_final').value),
                 observacoes: document.getElementById('observacoes').value
             };
-            const res = await fetch(`${API_URL}/api/registros`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+            const res = await fetch(`${API_URL}/api/registros`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
             const data = await res.json();
-            if(res.ok){ alertInline(`✅ Registro salvo! Distância: ${data.distancia_percorrida} km`); e.target.reset(); }
-            else { alertInline(`❌ ${data.error}`, false); }
+            if (res.ok) {
+                alertInline(`✅ Registro salvo! Distância: ${data.distancia_percorrida} km`);
+                e.target.reset();
+            } else {
+                alertInline(`❌ ${data.error}`, false);
+            }
         });
-        async function buscarRegistros(){
+
+        async function buscarRegistros() {
             const params = new URLSearchParams({
-                condutor: document.getElementById('filtro-condutor')?.value||'',
-                placa: document.getElementById('filtro-placa')?.value||'',
-                data_inicio: document.getElementById('filtro-data-inicio')?.value||'',
-                data_fim: document.getElementById('filtro-data-fim')?.value||''
+                condutor: document.getElementById('filtro-condutor')?.value || '',
+                placa: document.getElementById('filtro-placa')?.value || '',
+                data_inicio: document.getElementById('filtro-data-inicio')?.value || '',
+                data_fim: document.getElementById('filtro-data-fim')?.value || ''
             });
             const res = await fetch(`${API_URL}/api/registros?${params}`);
             const regs = await res.json();
             const tbody = document.getElementById('tbody-registros');
-            tbody.innerHTML = regs.length? regs.map(r=>`
+            tbody.innerHTML = regs.length ? regs.map(r => `
                 <tr>
                     <td>${r.id}</td><td>${r.condutor}</td><td>${r.placa_veiculo}</td>
                     <td>${fmtData(r.data_saida)}</td><td>${fmtData(r.data_chegada)}</td>
@@ -249,11 +239,16 @@
                     </td>
                 </tr>`).join('') : '<tr><td colspan="9">Nenhum registro</td></tr>';
         }
-        function limparFiltros(){
-            ['filtro-condutor','filtro-placa','filtro-data-inicio','filtro-data-fim'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+
+        function limparFiltros() {
+            ['filtro-condutor','filtro-placa','filtro-data-inicio','filtro-data-fim'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
             buscarRegistros();
         }
-        async function editarRegistro(id){
+
+        async function editarRegistro(id) {
             const res = await fetch(`${API_URL}/api/registros/${id}`);
             const r = await res.json();
             document.getElementById('edit-id').value = r.id;
@@ -263,10 +258,11 @@
             document.getElementById('edit-data_chegada').value = r.data_chegada;
             document.getElementById('edit-km_inicial').value = r.km_inicial;
             document.getElementById('edit-km_final').value = r.km_final;
-            document.getElementById('edit-observacoes').value = r.observacoes||'';
+            document.getElementById('edit-observacoes').value = r.observacoes || '';
             document.getElementById('modal-editar').classList.add('active');
         }
-        document.getElementById('form-editar').addEventListener('submit', async (e)=>{
+
+        document.getElementById('form-editar').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
             const body = {
@@ -279,29 +275,59 @@
                 observacoes: document.getElementById('edit-observacoes').value,
                 usuario_alteracao: 'Sistema'
             };
-            const res = await fetch(`${API_URL}/api/registros/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+            const res = await fetch(`${API_URL}/api/registros/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
             const data = await res.json();
-            if(res.ok){ alert('Registro atualizado!'); fecharModal('modal-editar'); buscarRegistros(); }
-            else { alert(data.error); }
+            if (res.ok) {
+                alert('Registro atualizado!');
+                fecharModal('modal-editar');
+                buscarRegistros();
+            } else {
+                alert(data.error);
+            }
         });
-        async function deletarRegistro(id){
-            if(!confirm('Tem certeza que deseja deletar este registro?')) return;
-            const res = await fetch(`${API_URL}/api/registros/${id}`, { method:'DELETE' });
-            if(res.ok){ alert('Registro deletado!'); buscarRegistros(); } else { alert('Erro ao deletar'); }
+
+        async function deletarRegistro(id) {
+            if (!confirm('Tem certeza que deseja deletar este registro?')) return;
+            const res = await fetch(`${API_URL}/api/registros/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('Registro deletado!');
+                buscarRegistros();
+            } else {
+                alert('Erro ao deletar');
+            }
         }
-        async function verHistorico(id){
+
+        async function verHistorico(id) {
             const res = await fetch(`${API_URL}/api/registros/${id}/historico`);
             const hist = await res.json();
             const c = document.getElementById('historico-content');
-            c.innerHTML = hist.length ? hist.map(h=>`<div style='padding:8px;border-left:3px solid #667eea;margin:6px 0;'>
-                <b>${h.campo_alterado}</b><br>De: ${h.valor_anterior} → Para: ${h.valor_novo}<br>
-                <small>${new Date(h.data_alteracao).toLocaleString('pt-BR')} - ${h.usuario_alteracao}</small>
-            </div>`).join('') : 'Sem alterações.';
+            c.innerHTML = hist.length
+                ? hist.map(h => `<div style='padding:8px;border-left:3px solid #667eea;margin:6px 0;'>
+                    <b>${h.campo_alterado}</b><br>De: ${h.valor_anterior} → Para: ${h.valor_novo}<br>
+                    <small>${new Date(h.data_alteracao).toLocaleString('pt-BR')} - ${h.usuario_alteracao}</small>
+                  </div>`).join('')
+                : 'Sem alterações.';
             document.getElementById('modal-historico').classList.add('active');
         }
-        function fecharModal(id){ document.getElementById(id).classList.remove('active'); }
-        function exportar(fmt){ window.open(`${API_URL}/api/exportar/${fmt}`, '_blank'); }
-        function fmtData(d){ if(!d) return ''; const [y,m,da]=d.split('-'); return `${da}/${m}/${y}`; }
+
+        function fecharModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function exportar(fmt) {
+            window.open(`${API_URL}/api/exportar/${fmt}`, '_blank');
+        }
+
+        function fmtData(d) {
+            if (!d) return '';
+            const [y, m, da] = d.split('-');
+            return `${da}/${m}/${y}`;
+        }
+
         document.addEventListener('DOMContentLoaded', buscarRegistros);
     </script>
 </body>
