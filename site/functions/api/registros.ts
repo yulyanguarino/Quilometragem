@@ -1,18 +1,18 @@
-export const onRequestGet = async (ctx: any) => {
-  // Só para verificar que a rota GET está viva
+export const onRequestGet = async () => {
   return new Response(JSON.stringify({ ok: true, route: "GET /api/registros" }), {
     headers: { "Content-Type": "application/json" },
   });
 };
 
 export const onRequestPost = async ({ env, request }: any) => {
-  // Body JSON
   const data = await request.json().catch(() => null);
   if (!data) {
-    return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400 });
+    return new Response(JSON.stringify({ error: "JSON inválido" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  // Exemplo simplificado de INSERT — adapte aos nomes de colunas do seu schema
   const {
     condutor,
     placa_veiculo,
@@ -23,27 +23,27 @@ export const onRequestPost = async ({ env, request }: any) => {
     observacoes,
   } = data;
 
-  const sql =
-    `INSERT INTO registros (condutor, placa_veiculo, data_saida, data_chegada, km_inicial, km_final, observacoes)
-     VALUES (?, ?, ?, ?, ?, ?, ?);`;
-
-  const params = [
-    condutor,
-    placa_veiculo,
-    data_saida,
-    data_chegada,
-    km_inicial,
-    km_final,
-    observacoes ?? null,
-  ];
+  const sql = `INSERT INTO registros
+    (condutor, placa_veiculo, data_saida, data_chegada, km_inicial, km_final, observacoes)
+    VALUES (?, ?, ?, ?, ?, ?, ?);`;
 
   try {
-    // env.DB vem do binding D1 (Associações → DB)
     // @ts-ignore
-    const result = await env.DB.prepare(sql).bind(...params).run();
+    const result = await env.DB.prepare(sql)
+      .bind(
+        condutor,
+        placa_veiculo,
+        data_saida,
+        data_chegada,
+        km_inicial,
+        km_final,
+        observacoes ?? null
+      )
+      .run();
+
     return new Response(JSON.stringify({ ok: true, result }), {
-      headers: { "Content-Type": "application/json" },
       status: 201,
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message || String(err) }), {
