@@ -1,8 +1,5 @@
 name = "quilometragem"
 compatibility_date = "2024-10-01"
-
-# Diga ao Pages onde estão os arquivos estáticos do seu site.
-# Ajuste se seu index.html estiver em outra pasta.
 pages_build_output_dir = "site"
 
 [[d1_databases]]
