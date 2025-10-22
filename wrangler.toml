@@ -1,7 +1,10 @@
 name = "quilometragem"
 compatibility_date = "2024-10-01"
 
+# Para Pages: onde estão os arquivos estáticos publicados
+pages_build_output_dir = "site"
+
 [[d1_databases]]
 binding = "DB"
-database_name = "quilometragem-db"     # coloque aqui o nome retornado no 'wrangler d1 create'
-database_id = "SEU_DATABASE_ID_AQUI"   # coloque aqui o ID retornado
+database_name = "quilometragem-db"
+database_id = "fdbae221-2b15-4e3a-b2ae-627faa32a4d5"
